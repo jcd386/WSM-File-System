@@ -94,11 +94,7 @@
     </fieldPermissions>
 
     <!-- Template_Folder__c Field Permissions -->
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Template_Folder__c.Folder_Template_Set__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
+    <!-- Note: Folder_Template_Set__c is a required field and cannot have FLS set -->
     <fieldPermissions>
         <editable>true</editable>
         <field>Template_Folder__c.Parent_Template_Folder__c</field>
