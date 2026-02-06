@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>WSM File System Access</label>
+    <description>Grants full access to the WSM File System components including Folder__c, File__c objects, and related Apex classes.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <license>Salesforce</license>
+
+    <!-- Apex Class Access -->
+    <classAccesses>
+        <apexClass>WSMFolderTreeService</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+
+    <!-- Folder__c Object Permissions -->
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>Folder__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+
+    <!-- File__c Object Permissions -->
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>File__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+
+    <!-- Folder__c Field Permissions -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Folder__c.Parent_Folder__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Folder__c.Parent_Id__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Folder__c.Template_Folder_Id__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Folder__c.Parent_Template_Folder_Id__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+
+    <!-- File__c Field Permissions -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>File__c.Folder__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>File__c.File_URL__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+
+    <!-- Tab Visibility -->
+    <tabSettings>
+        <tab>Folder__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>File__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+</PermissionSet>
