@@ -10,6 +10,10 @@
         <apexClass>WSMFolderTreeService</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <classAccesses>
+        <apexClass>TemplateFolderService</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
 
     <!-- Folder__c Object Permissions -->
     <objectPermissions>

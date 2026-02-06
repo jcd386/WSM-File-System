@@ -35,12 +35,20 @@ A hierarchical file and folder management system for Salesforce, built with Ligh
 | Class | Description |
 |-------|-------------|
 | `WSMFolderTreeService` | Service class providing all folder/file CRUD operations |
+| `TemplateFolderService` | Service class for managing template folder structures |
 
 ### Lightning Web Components
 
 | Component | Description |
 |-----------|-------------|
 | `wsmFolderTreeV2` | Folder tree component with full file management functionality |
+| `templateFolderManager` | Template folder manager for Folder Template Set record pages |
+
+### Lightning Pages
+
+| Page | Description |
+|------|-------------|
+| `Folder_Template_Set_Record_Page` | Record page for Folder Template Set with template folder manager |
 
 ### Flows
 
@@ -103,8 +111,9 @@ The folder template system allows you to define reusable folder structures that 
 ### Setting Up Templates
 
 1. Create a **Folder Template Set** record (e.g., "Standard Project Folders")
-2. Create **Template Folder** records linked to the set, defining your folder hierarchy
-3. Use the `Parent_Template_Folder__c` lookup to create nested folder structures
+2. Navigate to the Folder Template Set record page - the **Template Folder Manager** component will display
+3. Use the **New Folder** button to create template folders
+4. Use action buttons on each folder row to add subfolders, rename, move, or delete
 
 ### Applying Templates
 

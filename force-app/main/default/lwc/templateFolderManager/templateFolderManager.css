@@ -1,0 +1,31 @@
+/* Folder name cell with indent */
+.folder-name-cell {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+/* Action header alignment */
+th.action-header {
+  text-align: center;
+}
+
+/* Action cell alignment */
+td.action-cell {
+  text-align: center !important;
+  white-space: nowrap;
+}
+
+/* Delete icon - red color */
+.delete-icon {
+  --slds-c-icon-color-foreground-default: #c23934;
+}
+
+/* Empty state styling */
+.empty-state {
+  padding: 3rem 1rem;
+}
+
+.empty-state lightning-icon {
+  color: #706e6b;
+}

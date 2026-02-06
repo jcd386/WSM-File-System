@@ -1,0 +1,443 @@
+<template>
+  <lightning-card title="Template Folder Structure">
+    <!-- Header Actions -->
+    <lightning-button
+      slot="actions"
+      label="New Folder"
+      icon-name="utility:add"
+      onclick={handleOpenCreateModal}
+      disabled={isLoading}
+    ></lightning-button>
+
+    <!-- Error Display -->
+    <template if:true={error}>
+      <div class="slds-p-around_small slds-text-color_error">
+        {error}
+      </div>
+    </template>
+
+    <!-- Loading Spinner -->
+    <template if:true={isLoading}>
+      <div class="slds-p-around_medium slds-align_absolute-center">
+        <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+      </div>
+    </template>
+
+    <!-- Folder Tree Table -->
+    <template if:false={isLoading}>
+      <template if:true={hasTemplateFolders}>
+        <div class="slds-p-horizontal_small slds-p-bottom_small">
+          <table class="slds-table slds-table_cell-buffer slds-table_bordered" aria-label="Template folder structure">
+            <thead>
+              <tr class="slds-line-height_reset">
+                <th scope="col">
+                  <div class="slds-truncate" title="Folder Name">Folder Name</div>
+                </th>
+                <th scope="col" class="slds-cell-shrink">
+                  <div class="slds-truncate" title="Children">Children</div>
+                </th>
+                <th scope="col" class="action-header">
+                  <div class="slds-truncate" title="Actions">Actions</div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <template for:each={sortedTemplateFolders} for:item="folder">
+                <tr key={folder.key} class="slds-hint-parent">
+                  <td data-label="Folder Name">
+                    <div class="folder-name-cell" style={folder.indentStyle}>
+                      <span aria-hidden="true">📁 </span>
+                      <span class="slds-truncate" title={folder.label}>{folder.label}</span>
+                    </div>
+                  </td>
+                  <td data-label="Children" class="slds-text-align_center">
+                    <div class="slds-truncate" title={folder.childCount}>
+                      {folder.childCount}
+                    </div>
+                  </td>
+                  <td data-label="Actions" class="action-cell">
+                    <lightning-button-icon
+                      icon-name="utility:add"
+                      alternative-text="Add Subfolder"
+                      title="Add Subfolder"
+                      size="small"
+                      onclick={handleAddSubfolderClick}
+                      data-folder-id={folder.recordId}
+                      data-folder-name={folder.label}
+                      class="slds-m-right_xx-small"
+                    ></lightning-button-icon>
+                    <lightning-button-icon
+                      icon-name="utility:edit"
+                      alternative-text="Rename"
+                      title="Rename"
+                      size="small"
+                      onclick={handleRenameClick}
+                      data-folder-id={folder.recordId}
+                      data-folder-name={folder.label}
+                      class="slds-m-right_xx-small"
+                    ></lightning-button-icon>
+                    <lightning-button-icon
+                      icon-name="utility:move"
+                      alternative-text="Move"
+                      title="Move"
+                      size="small"
+                      onclick={handleMoveClick}
+                      data-folder-id={folder.recordId}
+                      data-folder-name={folder.label}
+                      class="slds-m-right_xx-small"
+                    ></lightning-button-icon>
+                    <lightning-button-icon
+                      icon-name="utility:delete"
+                      alternative-text="Delete"
+                      title="Delete"
+                      size="small"
+                      variant="bare"
+                      onclick={handleDeleteClick}
+                      data-folder-id={folder.recordId}
+                      data-folder-name={folder.label}
+                      class="delete-icon"
+                    ></lightning-button-icon>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </template>
+
+      <!-- Empty State -->
+      <template if:false={hasTemplateFolders}>
+        <div class="slds-p-around_medium slds-text-align_center empty-state">
+          <lightning-icon icon-name="utility:open_folder" size="large" alternative-text="No folders"></lightning-icon>
+          <p class="slds-m-top_small slds-text-heading_small">No Template Folders</p>
+          <p class="slds-m-top_x-small slds-text-color_weak">
+            Click "New Folder" to create your first template folder.
+          </p>
+        </div>
+      </template>
+    </template>
+  </lightning-card>
+
+  <!-- Create Folder Modal -->
+  <template if:true={showCreateModal}>
+    <section
+      role="dialog"
+      tabindex="-1"
+      aria-modal="true"
+      aria-labelledby="create-modal-heading"
+      class="slds-modal slds-fade-in-open"
+    >
+      <div class="slds-modal__container">
+        <header class="slds-modal__header">
+          <button
+            class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+            title="Close"
+            onclick={handleCloseCreateModal}
+          >
+            <lightning-icon icon-name="utility:close" alternative-text="Close" size="small"></lightning-icon>
+            <span class="slds-assistive-text">Close</span>
+          </button>
+          <h2 id="create-modal-heading" class="slds-modal__title slds-hyphenate">
+            {createModalTitle}
+          </h2>
+        </header>
+
+        <div class="slds-modal__content slds-p-around_medium">
+          <template if:true={createError}>
+            <div class="slds-box slds-theme_error slds-m-bottom_small" role="alert">
+              <lightning-icon icon-name="utility:error" alternative-text="Error" size="x-small" class="slds-m-right_x-small" variant="inverse"></lightning-icon>
+              <span>{createError}</span>
+            </div>
+          </template>
+
+          <div class="slds-form-element">
+            <label class="slds-form-element__label" for="create-folder-name">
+              Folder Name
+            </label>
+            <div class="slds-form-element__control">
+              <lightning-input
+                id="create-folder-name"
+                type="text"
+                value={newFolderName}
+                onchange={handleCreateNameChange}
+                placeholder="Enter folder name"
+                max-length="80"
+                disabled={isCreating}
+              ></lightning-input>
+            </div>
+            <div class="slds-form-element__help slds-text-color_weak slds-m-top_x-small">
+              Maximum 80 characters.
+            </div>
+          </div>
+
+          <template if:true={isCreating}>
+            <div class="slds-m-top_medium slds-align_absolute-center">
+              <lightning-spinner alternative-text="Creating folder..." size="small"></lightning-spinner>
+              <span class="slds-m-left_small">Creating folder...</span>
+            </div>
+          </template>
+        </div>
+
+        <footer class="slds-modal__footer">
+          <lightning-button
+            label="Cancel"
+            onclick={handleCloseCreateModal}
+            disabled={isCreating}
+          ></lightning-button>
+          <lightning-button
+            variant="brand"
+            label="Create"
+            onclick={handleCreateFolder}
+            disabled={isCreating}
+          ></lightning-button>
+        </footer>
+      </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+  </template>
+
+  <!-- Rename Folder Modal -->
+  <template if:true={showRenameModal}>
+    <section
+      role="dialog"
+      tabindex="-1"
+      aria-modal="true"
+      aria-labelledby="rename-modal-heading"
+      class="slds-modal slds-fade-in-open"
+    >
+      <div class="slds-modal__container">
+        <header class="slds-modal__header">
+          <button
+            class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+            title="Close"
+            onclick={handleCloseRenameModal}
+          >
+            <lightning-icon icon-name="utility:close" alternative-text="Close" size="small"></lightning-icon>
+            <span class="slds-assistive-text">Close</span>
+          </button>
+          <h2 id="rename-modal-heading" class="slds-modal__title slds-hyphenate">
+            Rename Folder
+          </h2>
+        </header>
+
+        <div class="slds-modal__content slds-p-around_medium">
+          <template if:true={renameError}>
+            <div class="slds-box slds-theme_error slds-m-bottom_small" role="alert">
+              <lightning-icon icon-name="utility:error" alternative-text="Error" size="x-small" class="slds-m-right_x-small" variant="inverse"></lightning-icon>
+              <span>{renameError}</span>
+            </div>
+          </template>
+
+          <div class="slds-form-element">
+            <label class="slds-form-element__label" for="rename-folder-name">
+              Folder Name
+            </label>
+            <div class="slds-form-element__control">
+              <lightning-input
+                id="rename-folder-name"
+                type="text"
+                value={newNameInput}
+                onchange={handleRenameInputChange}
+                placeholder="Enter folder name"
+                max-length="80"
+                disabled={isRenaming}
+              ></lightning-input>
+            </div>
+            <div class="slds-form-element__help slds-text-color_weak slds-m-top_x-small">
+              Maximum 80 characters.
+            </div>
+          </div>
+
+          <template if:true={isRenaming}>
+            <div class="slds-m-top_medium slds-align_absolute-center">
+              <lightning-spinner alternative-text="Renaming folder..." size="small"></lightning-spinner>
+              <span class="slds-m-left_small">Renaming folder...</span>
+            </div>
+          </template>
+        </div>
+
+        <footer class="slds-modal__footer">
+          <lightning-button
+            label="Cancel"
+            onclick={handleCloseRenameModal}
+            disabled={isRenaming}
+          ></lightning-button>
+          <lightning-button
+            variant="brand"
+            label="Save"
+            onclick={handleRenameFolder}
+            disabled={isRenaming}
+          ></lightning-button>
+        </footer>
+      </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+  </template>
+
+  <!-- Move Folder Modal -->
+  <template if:true={showMoveModal}>
+    <section
+      role="dialog"
+      tabindex="-1"
+      aria-modal="true"
+      aria-labelledby="move-modal-heading"
+      class="slds-modal slds-fade-in-open"
+    >
+      <div class="slds-modal__container">
+        <header class="slds-modal__header">
+          <button
+            class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+            title="Close"
+            onclick={handleCloseMoveModal}
+          >
+            <lightning-icon icon-name="utility:close" alternative-text="Close" size="small"></lightning-icon>
+            <span class="slds-assistive-text">Close</span>
+          </button>
+          <h2 id="move-modal-heading" class="slds-modal__title slds-hyphenate">
+            Move Folder: {folderToMoveName}
+          </h2>
+        </header>
+
+        <div class="slds-modal__content slds-p-around_medium">
+          <template if:true={moveError}>
+            <div class="slds-box slds-theme_error slds-m-bottom_small" role="alert">
+              <lightning-icon icon-name="utility:error" alternative-text="Error" size="x-small" class="slds-m-right_x-small" variant="inverse"></lightning-icon>
+              <span>{moveError}</span>
+            </div>
+          </template>
+
+          <template if:true={isLoadingMoveTargets}>
+            <div class="slds-p-around_medium slds-align_absolute-center">
+              <lightning-spinner alternative-text="Loading destinations..." size="small"></lightning-spinner>
+            </div>
+          </template>
+
+          <template if:false={isLoadingMoveTargets}>
+            <div class="slds-form-element">
+              <label class="slds-form-element__label" for="move-target-select">
+                Destination
+              </label>
+              <div class="slds-form-element__control">
+                <lightning-combobox
+                  name="move-target-select"
+                  value={selectedMoveTargetId}
+                  placeholder="Select destination folder"
+                  options={moveTargetOptions}
+                  onchange={handleMoveTargetChange}
+                  disabled={isMoving}
+                ></lightning-combobox>
+              </div>
+              <div class="slds-form-element__help slds-text-color_weak slds-m-top_x-small">
+                Select where to move this folder. Choose "Root Level" to make it a top-level folder.
+              </div>
+            </div>
+          </template>
+
+          <template if:true={isMoving}>
+            <div class="slds-m-top_medium slds-align_absolute-center">
+              <lightning-spinner alternative-text="Moving folder..." size="small"></lightning-spinner>
+              <span class="slds-m-left_small">Moving folder...</span>
+            </div>
+          </template>
+        </div>
+
+        <footer class="slds-modal__footer">
+          <lightning-button
+            label="Cancel"
+            onclick={handleCloseMoveModal}
+            disabled={isMoving}
+          ></lightning-button>
+          <lightning-button
+            variant="brand"
+            label="Move"
+            onclick={handleMoveFolder}
+            disabled={isMoving}
+          ></lightning-button>
+        </footer>
+      </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+  </template>
+
+  <!-- Delete Folder Modal -->
+  <template if:true={showDeleteModal}>
+    <section
+      role="dialog"
+      tabindex="-1"
+      aria-modal="true"
+      aria-labelledby="delete-modal-heading"
+      class="slds-modal slds-fade-in-open"
+    >
+      <div class="slds-modal__container">
+        <header class="slds-modal__header slds-theme_error slds-theme_alert-texture">
+          <button
+            class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+            title="Close"
+            onclick={handleCloseDeleteModal}
+          >
+            <lightning-icon icon-name="utility:close" alternative-text="Close" size="small"></lightning-icon>
+            <span class="slds-assistive-text">Close</span>
+          </button>
+          <h2 id="delete-modal-heading" class="slds-modal__title slds-hyphenate">
+            Delete Folder
+          </h2>
+        </header>
+
+        <div class="slds-modal__content slds-p-around_medium">
+          <template if:true={deleteError}>
+            <div class="slds-box slds-theme_error slds-m-bottom_small" role="alert">
+              <lightning-icon icon-name="utility:error" alternative-text="Error" size="x-small" class="slds-m-right_x-small" variant="inverse"></lightning-icon>
+              <span>{deleteError}</span>
+            </div>
+          </template>
+
+          <div class="slds-text-align_center slds-p-around_medium">
+            <lightning-icon
+              icon-name="utility:warning"
+              alternative-text="Warning"
+              size="large"
+              variant="error"
+              class="slds-m-bottom_small"
+            ></lightning-icon>
+            <p class="slds-text-heading_medium slds-m-bottom_small">
+              Are you sure you want to delete this folder?
+            </p>
+            <p class="slds-text-body_regular slds-m-bottom_x-small">
+              <strong>{folderToDeleteName}</strong>
+            </p>
+            <template if:true={hasDeleteWarning}>
+              <p class="slds-text-color_error slds-text-body_regular slds-m-bottom_x-small">
+                {deleteWarningMessage}
+              </p>
+            </template>
+            <p class="slds-text-color_error slds-text-body_small slds-m-top_small">
+              This action cannot be undone.
+            </p>
+          </div>
+
+          <template if:true={isDeleting}>
+            <div class="slds-m-top_medium slds-align_absolute-center">
+              <lightning-spinner alternative-text="Deleting folder..." size="small"></lightning-spinner>
+              <span class="slds-m-left_small">Deleting folder...</span>
+            </div>
+          </template>
+        </div>
+
+        <footer class="slds-modal__footer slds-theme_default">
+          <lightning-button
+            label="Cancel"
+            onclick={handleCloseDeleteModal}
+            disabled={isDeleting}
+          ></lightning-button>
+          <lightning-button
+            variant="destructive"
+            label="Delete"
+            onclick={handleConfirmDelete}
+            disabled={isDeleting}
+          ></lightning-button>
+        </footer>
+      </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+  </template>
+</template>
