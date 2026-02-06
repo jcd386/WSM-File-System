@@ -6,18 +6,21 @@ private class TemplateFolderServiceTest {
 
     @TestSetup
     static void setupTestData() {
-        // Assign permission set to running user
-        User testUser = [SELECT Id FROM User WHERE Id = :UserInfo.getUserId()];
-        PermissionSet ps = [SELECT Id FROM PermissionSet WHERE Name = 'WSM_File_System_Access' LIMIT 1];
-
-        // Check if assignment already exists
-        List<PermissionSetAssignment> existing = [
-            SELECT Id FROM PermissionSetAssignment
-            WHERE AssigneeId = :testUser.Id AND PermissionSetId = :ps.Id
-        ];
-
-        if (existing.isEmpty()) {
-            insert new PermissionSetAssignment(AssigneeId = testUser.Id, PermissionSetId = ps.Id);
+        // Try to assign permission set if it exists
+        List<PermissionSet> psList = [SELECT Id FROM PermissionSet WHERE Name = 'WSM_File_System_Access' LIMIT 1];
+        if (!psList.isEmpty()) {
+            User testUser = [SELECT Id FROM User WHERE Id = :UserInfo.getUserId()];
+            List<PermissionSetAssignment> existing = [
+                SELECT Id FROM PermissionSetAssignment
+                WHERE AssigneeId = :testUser.Id AND PermissionSetId = :psList[0].Id
+            ];
+            if (existing.isEmpty()) {
+                try {
+                    insert new PermissionSetAssignment(AssigneeId = testUser.Id, PermissionSetId = psList[0].Id);
+                } catch (Exception e) {
+                    // Permission set assignment failed, continue without it
+                }
+            }
         }
 
         Folder_Template_Set__c templateSet = new Folder_Template_Set__c(
@@ -52,50 +55,87 @@ private class TemplateFolderServiceTest {
 
         Test.startTest();
         try { TemplateFolderService.getTemplateFolders(templateSet.Id); } catch (Exception e) {}
-        try { TemplateFolderService.getTemplateFolders(''); } catch (Exception e) {}
-        try { TemplateFolderService.getTemplateFolders(null); } catch (Exception e) {}
         Test.stopTest();
     }
 
     @isTest
-    static void testCreateTemplateFolder() {
+    static void testGetTemplateFoldersValidation() {
+        Test.startTest();
+        // Validation paths - don't need FLS
+        List<TemplateFolderService.TreeNode> r1 = TemplateFolderService.getTemplateFolders('');
+        List<TemplateFolderService.TreeNode> r2 = TemplateFolderService.getTemplateFolders(null);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testCreateTemplateFolderSuccess() {
         Folder_Template_Set__c templateSet = [SELECT Id FROM Folder_Template_Set__c WHERE Name = 'Test Template Set' LIMIT 1];
         Template_Folder__c rootFolder = [SELECT Id FROM Template_Folder__c WHERE Name = 'Root Template Folder' LIMIT 1];
 
         Test.startTest();
         try { TemplateFolderService.createTemplateFolder('New Root Folder', templateSet.Id, null); } catch (Exception e) {}
         try { TemplateFolderService.createTemplateFolder('New Child Folder', templateSet.Id, rootFolder.Id); } catch (Exception e) {}
-        try { TemplateFolderService.createTemplateFolder('', templateSet.Id, null); } catch (Exception e) {}
-        try { TemplateFolderService.createTemplateFolder('Test', '', null); } catch (Exception e) {}
         try { TemplateFolderService.createTemplateFolder('Root Template Folder', templateSet.Id, null); } catch (Exception e) {}
-        String longName = 'A'.repeat(81);
-        try { TemplateFolderService.createTemplateFolder(longName, templateSet.Id, null); } catch (Exception e) {}
         Test.stopTest();
     }
 
     @isTest
-    static void testRenameTemplateFolder() {
+    static void testCreateTemplateFolderValidation() {
+        Folder_Template_Set__c templateSet = [SELECT Id FROM Folder_Template_Set__c WHERE Name = 'Test Template Set' LIMIT 1];
+
+        Test.startTest();
+        // Validation paths - don't need FLS
+        TemplateFolderService.OperationResult r1 = TemplateFolderService.createTemplateFolder('', templateSet.Id, null);
+        TemplateFolderService.OperationResult r2 = TemplateFolderService.createTemplateFolder('Test', '', null);
+        TemplateFolderService.OperationResult r3 = TemplateFolderService.createTemplateFolder('Test', null, null);
+        String longName = 'A'.repeat(81);
+        TemplateFolderService.OperationResult r4 = TemplateFolderService.createTemplateFolder(longName, templateSet.Id, null);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testRenameTemplateFolderSuccess() {
         Template_Folder__c folder = [SELECT Id FROM Template_Folder__c WHERE Name = 'Grandchild Template Folder' LIMIT 1];
 
         Test.startTest();
         try { TemplateFolderService.renameTemplateFolder(folder.Id, 'Renamed Folder'); } catch (Exception e) {}
-        try { TemplateFolderService.renameTemplateFolder('', 'New Name'); } catch (Exception e) {}
-        try { TemplateFolderService.renameTemplateFolder(folder.Id, ''); } catch (Exception e) {}
-        String longName = 'A'.repeat(81);
-        try { TemplateFolderService.renameTemplateFolder(folder.Id, longName); } catch (Exception e) {}
         Test.stopTest();
     }
 
     @isTest
-    static void testMoveTemplateFolder() {
+    static void testRenameTemplateFolderValidation() {
+        Template_Folder__c folder = [SELECT Id FROM Template_Folder__c WHERE Name = 'Grandchild Template Folder' LIMIT 1];
+
+        Test.startTest();
+        // Validation paths - don't need FLS
+        TemplateFolderService.OperationResult r1 = TemplateFolderService.renameTemplateFolder('', 'New Name');
+        TemplateFolderService.OperationResult r2 = TemplateFolderService.renameTemplateFolder(folder.Id, '');
+        TemplateFolderService.OperationResult r3 = TemplateFolderService.renameTemplateFolder(null, 'New Name');
+        TemplateFolderService.OperationResult r4 = TemplateFolderService.renameTemplateFolder(folder.Id, null);
+        String longName = 'A'.repeat(81);
+        TemplateFolderService.OperationResult r5 = TemplateFolderService.renameTemplateFolder(folder.Id, longName);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testMoveTemplateFolderSuccess() {
         Template_Folder__c grandchildFolder = [SELECT Id FROM Template_Folder__c WHERE Name = 'Grandchild Template Folder' LIMIT 1];
         Template_Folder__c rootFolder = [SELECT Id FROM Template_Folder__c WHERE Name = 'Root Template Folder' LIMIT 1];
+        Template_Folder__c childFolder = [SELECT Id FROM Template_Folder__c WHERE Name = 'Child Template Folder' LIMIT 1];
 
         Test.startTest();
         try { TemplateFolderService.moveTemplateFolder(grandchildFolder.Id, rootFolder.Id); } catch (Exception e) {}
         try { TemplateFolderService.moveTemplateFolder(rootFolder.Id, rootFolder.Id); } catch (Exception e) {}
-        try { TemplateFolderService.moveTemplateFolder('', null); } catch (Exception e) {}
-        try { TemplateFolderService.moveTemplateFolder(rootFolder.Id, null); } catch (Exception e) {}
+        try { TemplateFolderService.moveTemplateFolder(rootFolder.Id, childFolder.Id); } catch (Exception e) {}
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testMoveTemplateFolderValidation() {
+        Test.startTest();
+        // Validation paths - don't need FLS
+        TemplateFolderService.OperationResult r1 = TemplateFolderService.moveTemplateFolder('', null);
+        TemplateFolderService.OperationResult r2 = TemplateFolderService.moveTemplateFolder(null, null);
         Test.stopTest();
     }
 
@@ -110,17 +150,34 @@ private class TemplateFolderServiceTest {
     }
 
     @isTest
+    static void testMoveToRoot() {
+        Template_Folder__c childFolder = [SELECT Id FROM Template_Folder__c WHERE Name = 'Child Template Folder' LIMIT 1];
+
+        Test.startTest();
+        try { TemplateFolderService.moveTemplateFolder(childFolder.Id, null); } catch (Exception e) {}
+        Test.stopTest();
+    }
+
+    @isTest
     static void testGetChildCount() {
         Template_Folder__c rootFolder = [SELECT Id FROM Template_Folder__c WHERE Name = 'Root Template Folder' LIMIT 1];
 
         Test.startTest();
         try { TemplateFolderService.getChildCount(rootFolder.Id); } catch (Exception e) {}
-        try { TemplateFolderService.getChildCount(''); } catch (Exception e) {}
         Test.stopTest();
     }
 
     @isTest
-    static void testDeleteTemplateFolder() {
+    static void testGetChildCountValidation() {
+        Test.startTest();
+        // Validation paths - don't need FLS
+        Integer r1 = TemplateFolderService.getChildCount('');
+        Integer r2 = TemplateFolderService.getChildCount(null);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testDeleteTemplateFolderSuccess() {
         Folder_Template_Set__c templateSet = [SELECT Id FROM Folder_Template_Set__c WHERE Name = 'Test Template Set' LIMIT 1];
         Template_Folder__c folderToDelete = new Template_Folder__c(
             Name = 'Folder To Delete',
@@ -130,7 +187,15 @@ private class TemplateFolderServiceTest {
 
         Test.startTest();
         try { TemplateFolderService.deleteTemplateFolder(folderToDelete.Id); } catch (Exception e) {}
-        try { TemplateFolderService.deleteTemplateFolder(''); } catch (Exception e) {}
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testDeleteTemplateFolderValidation() {
+        Test.startTest();
+        // Validation paths - don't need FLS
+        TemplateFolderService.DeleteResult r1 = TemplateFolderService.deleteTemplateFolder('');
+        TemplateFolderService.DeleteResult r2 = TemplateFolderService.deleteTemplateFolder(null);
         Test.stopTest();
     }
 
@@ -157,14 +222,25 @@ private class TemplateFolderServiceTest {
     }
 
     @isTest
-    static void testGetMoveTargets() {
+    static void testGetMoveTargetsSuccess() {
         Folder_Template_Set__c templateSet = [SELECT Id FROM Folder_Template_Set__c WHERE Name = 'Test Template Set' LIMIT 1];
         Template_Folder__c rootFolder = [SELECT Id FROM Template_Folder__c WHERE Name = 'Root Template Folder' LIMIT 1];
 
         Test.startTest();
         try { TemplateFolderService.getMoveTargets(rootFolder.Id, templateSet.Id); } catch (Exception e) {}
-        try { TemplateFolderService.getMoveTargets('', templateSet.Id); } catch (Exception e) {}
-        try { TemplateFolderService.getMoveTargets(rootFolder.Id, ''); } catch (Exception e) {}
+        try { TemplateFolderService.getMoveTargets(null, templateSet.Id); } catch (Exception e) {}
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetMoveTargetsValidation() {
+        Template_Folder__c rootFolder = [SELECT Id FROM Template_Folder__c WHERE Name = 'Root Template Folder' LIMIT 1];
+
+        Test.startTest();
+        // Validation paths - don't need FLS
+        List<TemplateFolderService.TreeNode> r1 = TemplateFolderService.getMoveTargets('', null);
+        List<TemplateFolderService.TreeNode> r2 = TemplateFolderService.getMoveTargets(rootFolder.Id, '');
+        List<TemplateFolderService.TreeNode> r3 = TemplateFolderService.getMoveTargets(null, '');
         Test.stopTest();
     }
 
@@ -183,8 +259,16 @@ private class TemplateFolderServiceTest {
 
         TemplateFolderService.TreeNode node2 = new TemplateFolderService.TreeNode();
         node2.label = 'Another Label';
+        node2.key = 'key2';
 
-        try { node.compareTo(node2); } catch (Exception e) {}
+        Integer comparison = node.compareTo(node2);
+
+        TemplateFolderService.TreeNode node3 = new TemplateFolderService.TreeNode();
+        node3.label = null;
+        node3.key = 'key3';
+        Integer c1 = node.compareTo(node3);
+        Integer c2 = node3.compareTo(node);
+        Integer c3 = node.compareTo(null);
 
         TemplateFolderService.OperationResult opResult1 = new TemplateFolderService.OperationResult(true, 'Error message');
         TemplateFolderService.OperationResult opResult2 = new TemplateFolderService.OperationResult(true, null, 'Record Name');
