@@ -9,22 +9,70 @@ public with sharing class WSMFolderTreeService {
     // CONSTANTS
     // ─────────────────────────────────────────────────────────────────────────
 
-    // Object API Names
-    private static final String FOLDER_OBJECT = 'Folder__c';
-    private static final String FILE_OBJECT   = 'File__c';
-
-    // Field API Names
-    private static final String FOLDER_PARENT_FOLDER_FIELD = 'Parent_Folder__c';
-    private static final String FOLDER_ANCHOR_FIELD        = 'Parent_Id__c';
-    private static final String FILE_FOLDER_LOOKUP_FIELD   = 'Folder__c';
-    private static final String FILE_URL_FIELD             = 'File_URL__c';
-
     // Node Type Constants
     @TestVisible private static final String NODE_TYPE_FOLDER = 'Folder';
     @TestVisible private static final String NODE_TYPE_FILE   = 'File';
 
     // Cached Schema Describe Results
     private static Map<String, Schema.SObjectType> globalDescribe;
+
+    // Dynamic Object/Field Names (resolved at runtime based on namespace)
+    private static String FOLDER_OBJECT;
+    private static String FILE_OBJECT;
+    private static String FOLDER_PARENT_FOLDER_FIELD;
+    private static String FOLDER_ANCHOR_FIELD;
+    private static String FILE_FOLDER_LOOKUP_FIELD;
+    private static String FILE_URL_FIELD;
+    private static Boolean namesInitialized = false;
+
+    /**
+     * @description Initializes object and field names with correct namespace prefix.
+     *              Checks if namespaced objects exist, otherwise uses non-namespaced names.
+     */
+    private static void initializeObjectNames() {
+        if (namesInitialized) {
+            return;
+        }
+
+        Map<String, Schema.SObjectType> describe = getGlobalDescribe();
+
+        // Check for namespaced version first (e.g., wsmdev__Folder__c)
+        // We check by looking for any object ending with __Folder__c that's not just Folder__c
+        String detectedNamespace = '';
+        for (String objName : describe.keySet()) {
+            if (objName.endsWith('__folder__c') && objName != 'folder__c') {
+                // Extract namespace from object name (e.g., "wsmdev__folder__c" -> "wsmdev__")
+                Integer idx = objName.indexOf('__folder__c');
+                if (idx > 0) {
+                    detectedNamespace = objName.substring(0, idx) + '__';
+                    break;
+                }
+            }
+        }
+
+        // If no namespaced Folder__c found, check for namespaced File__c
+        if (String.isBlank(detectedNamespace)) {
+            for (String objName : describe.keySet()) {
+                if (objName.endsWith('__file__c') && objName != 'file__c') {
+                    Integer idx = objName.indexOf('__file__c');
+                    if (idx > 0) {
+                        detectedNamespace = objName.substring(0, idx) + '__';
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Set object and field names with detected namespace (or empty string for non-namespaced)
+        FOLDER_OBJECT = detectedNamespace + 'Folder__c';
+        FILE_OBJECT = detectedNamespace + 'File__c';
+        FOLDER_PARENT_FOLDER_FIELD = detectedNamespace + 'Parent_Folder__c';
+        FOLDER_ANCHOR_FIELD = detectedNamespace + 'Parent_Id__c';
+        FILE_FOLDER_LOOKUP_FIELD = detectedNamespace + 'Folder__c';
+        FILE_URL_FIELD = detectedNamespace + 'File_URL__c';
+
+        namesInitialized = true;
+    }
     
     // ─────────────────────────────────────────────────────────────────────────
     // INNER CLASSES
@@ -87,12 +135,15 @@ public with sharing class WSMFolderTreeService {
      * @throws AuraHandledException if objects are not found
      */
     private static void validateObjectsExist() {
+        // Initialize object names first (detects namespace)
+        initializeObjectNames();
+
         Map<String, Schema.SObjectType> describe = getGlobalDescribe();
-        if (!describe.containsKey(FOLDER_OBJECT)) {
-            throw new AuraHandledException('Folder object not found: ' + FOLDER_OBJECT + '. Update constants.');
+        if (!describe.containsKey(FOLDER_OBJECT.toLowerCase())) {
+            throw new AuraHandledException('Folder object not found: ' + FOLDER_OBJECT + '. Ensure the WSM File System objects are deployed.');
         }
-        if (!describe.containsKey(FILE_OBJECT)) {
-            throw new AuraHandledException('File object not found: ' + FILE_OBJECT + '. Update constants.');
+        if (!describe.containsKey(FILE_OBJECT.toLowerCase())) {
+            throw new AuraHandledException('File object not found: ' + FILE_OBJECT + '. Ensure the WSM File System objects are deployed.');
         }
     }
 
@@ -101,15 +152,18 @@ public with sharing class WSMFolderTreeService {
      * @throws AuraHandledException if user lacks access
      */
     private static void validateObjectAccess() {
+        // Ensure names are initialized
+        initializeObjectNames();
+
         Map<String, Schema.SObjectType> describe = getGlobalDescribe();
-        
-        SObjectType folderObjType = describe.get(FOLDER_OBJECT);
-        SObjectType fileObjType = describe.get(FILE_OBJECT);
-        
-        if (!folderObjType.getDescribe().isAccessible()) {
+
+        SObjectType folderObjType = describe.get(FOLDER_OBJECT.toLowerCase());
+        SObjectType fileObjType = describe.get(FILE_OBJECT.toLowerCase());
+
+        if (folderObjType == null || !folderObjType.getDescribe().isAccessible()) {
             throw new AuraHandledException('Insufficient permissions to access folder records.');
         }
-        if (!fileObjType.getDescribe().isAccessible()) {
+        if (fileObjType == null || !fileObjType.getDescribe().isAccessible()) {
             throw new AuraHandledException('Insufficient permissions to access file records.');
         }
     }
@@ -711,7 +765,7 @@ public with sharing class WSMFolderTreeService {
         
         // Check create permission on File object
         Map<String, Schema.SObjectType> describe = getGlobalDescribe();
-        SObjectType fileObjType = describe.get(FILE_OBJECT);
+        SObjectType fileObjType = describe.get(FILE_OBJECT.toLowerCase());
         if (!fileObjType.getDescribe().isCreateable()) {
             result.errorMessage = 'Insufficient permissions to create file records.';
             return result;
@@ -817,7 +871,7 @@ public with sharing class WSMFolderTreeService {
 
         // Check create permission on File object
         Map<String, Schema.SObjectType> describe = getGlobalDescribe();
-        SObjectType fileObjType = describe.get(FILE_OBJECT);
+        SObjectType fileObjType = describe.get(FILE_OBJECT.toLowerCase());
         if (!fileObjType.getDescribe().isCreateable()) {
             result.errorMessage = 'Insufficient permissions to create file records.';
             return result;
@@ -1054,7 +1108,7 @@ public with sharing class WSMFolderTreeService {
 
         // Check create permission
         Map<String, Schema.SObjectType> describe = getGlobalDescribe();
-        SObjectType folderObjType = describe.get(FOLDER_OBJECT);
+        SObjectType folderObjType = describe.get(FOLDER_OBJECT.toLowerCase());
         if (!folderObjType.getDescribe().isCreateable()) {
             result.errorMessage = 'Insufficient permissions to create folders.';
             return result;
@@ -1418,7 +1472,7 @@ public with sharing class WSMFolderTreeService {
 
         // Check update permission on File object
         Map<String, Schema.SObjectType> describe = getGlobalDescribe();
-        SObjectType fileObjType = describe.get(FILE_OBJECT);
+        SObjectType fileObjType = describe.get(FILE_OBJECT.toLowerCase());
         if (!fileObjType.getDescribe().isUpdateable()) {
             result.errorMessage = 'Insufficient permissions to move files.';
             return result;
@@ -1552,7 +1606,7 @@ public with sharing class WSMFolderTreeService {
 
         // Check delete permission on File object
         Map<String, Schema.SObjectType> describe = getGlobalDescribe();
-        SObjectType fileObjType = describe.get(FILE_OBJECT);
+        SObjectType fileObjType = describe.get(FILE_OBJECT.toLowerCase());
         if (!fileObjType.getDescribe().isDeletable()) {
             result.errorMessage = 'Insufficient permissions to delete files.';
             return result;
@@ -1728,7 +1782,7 @@ public with sharing class WSMFolderTreeService {
 
         // Check update permission
         Map<String, Schema.SObjectType> describe = getGlobalDescribe();
-        SObjectType folderObjType = describe.get(FOLDER_OBJECT);
+        SObjectType folderObjType = describe.get(FOLDER_OBJECT.toLowerCase());
         if (!folderObjType.getDescribe().isUpdateable()) {
             result.errorMessage = 'Insufficient permissions to rename folders.';
             return result;
@@ -1814,8 +1868,8 @@ public with sharing class WSMFolderTreeService {
 
         // Check delete permissions
         Map<String, Schema.SObjectType> describe = getGlobalDescribe();
-        SObjectType folderObjType = describe.get(FOLDER_OBJECT);
-        SObjectType fileObjType = describe.get(FILE_OBJECT);
+        SObjectType folderObjType = describe.get(FOLDER_OBJECT.toLowerCase());
+        SObjectType fileObjType = describe.get(FILE_OBJECT.toLowerCase());
 
         if (!folderObjType.getDescribe().isDeletable()) {
             result.errorMessage = 'Insufficient permissions to delete folders.';
@@ -1910,7 +1964,7 @@ public with sharing class WSMFolderTreeService {
 
         // Check update permission
         Map<String, Schema.SObjectType> describe = getGlobalDescribe();
-        SObjectType folderObjType = describe.get(FOLDER_OBJECT);
+        SObjectType folderObjType = describe.get(FOLDER_OBJECT.toLowerCase());
         if (!folderObjType.getDescribe().isUpdateable()) {
             result.errorMessage = 'Insufficient permissions to move folders.';
             return result;

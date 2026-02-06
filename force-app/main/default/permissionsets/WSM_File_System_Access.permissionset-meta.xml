@@ -33,6 +33,39 @@
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
 
+    <!-- Template_Folder__c Object Permissions -->
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>Template_Folder__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+
+    <!-- Folder_Template__c Object Permissions -->
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>Folder_Template__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+
+    <!-- Folder_Template_Set__c Object Permissions -->
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>Folder_Template_Set__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+
     <!-- Folder__c Field Permissions -->
     <fieldPermissions>
         <editable>true</editable>
@@ -67,6 +100,25 @@
         <readable>true</readable>
     </fieldPermissions>
 
+    <!-- Template_Folder__c Field Permissions -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Template_Folder__c.Folder_Template_Set__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Template_Folder__c.Parent_Template_Folder__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+
+    <!-- Folder_Template_Set__c Field Permissions -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Folder_Template_Set__c.Parent_Template_Folder__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+
     <!-- Tab Visibility -->
     <tabSettings>
         <tab>Folder__c</tab>
@@ -74,6 +126,14 @@
     </tabSettings>
     <tabSettings>
         <tab>File__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Folder_Template_Set__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Folder_Template__c</tab>
         <visibility>Visible</visibility>
     </tabSettings>
 </PermissionSet>

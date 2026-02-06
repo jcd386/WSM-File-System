@@ -12,15 +12,24 @@ A hierarchical file and folder management system for Salesforce, built with Ligh
 - **Drag & Drop Upload**: Drop files directly into folders
 - **Cross-Record Navigation**: Navigate folder hierarchies that span related records
 - **File Preview**: Click file names to open native Salesforce file preview
+- **Folder Templates**: Create reusable folder structure templates and apply them to new records
 
 ## Components
 
-### Custom Objects
+### Core Objects
 
 | Object | Description |
 |--------|-------------|
 | `Folder__c` | Stores folder hierarchy with self-referential parent lookup |
 | `File__c` | Stores file references linked to folders |
+
+### Template Objects
+
+| Object | Description |
+|--------|-------------|
+| `Folder_Template_Set__c` | Groups folder templates together (e.g., "Project Folders", "Case Folders") |
+| `Template_Folder__c` | Individual folder templates within a set |
+| `Folder_Template__c` | Links templates to other metadata |
 
 ### Apex Classes
 
@@ -34,11 +43,17 @@ A hierarchical file and folder management system for Salesforce, built with Ligh
 |-----------|-------------|
 | `wsmFolderTreeV2` | Folder tree component with full file management functionality |
 
+### Flows
+
+| Flow | Description |
+|------|-------------|
+| `WSM_ALF_Folders_Build_Folder_Structure` | Auto-launched flow that creates folder structure from a template |
+
 ### Permission Set
 
 | Permission Set | Description |
 |----------------|-------------|
-| `WSM_File_System_Access` | Grants full access to Folder__c, File__c, and Apex classes |
+| `WSM_File_System_Access` | Grants full access to all File System objects and Apex classes |
 
 ## Installation
 
@@ -81,6 +96,29 @@ sf project deploy start --target-org YOUR_ORG_ALIAS
 ## Configuration
 
 The component uses the `Parent_Id__c` field on `Folder__c` to anchor folders to parent records. This field stores the record ID (Account, Opportunity, etc.) where the folder structure is rooted.
+
+## Folder Templates
+
+The folder template system allows you to define reusable folder structures that can be automatically created on new records.
+
+### Setting Up Templates
+
+1. Create a **Folder Template Set** record (e.g., "Standard Project Folders")
+2. Create **Template Folder** records linked to the set, defining your folder hierarchy
+3. Use the `Parent_Template_Folder__c` lookup to create nested folder structures
+
+### Applying Templates
+
+Call the `WSM_ALF_Folders_Build_Folder_Structure` flow with these input variables:
+
+| Variable | Description |
+|----------|-------------|
+| `INC_Folder_Template_Set_Id` | The ID of the Folder Template Set to use |
+| `INC_Obj_ID` | The record ID to create folders for (e.g., Account, Opportunity) |
+| `INC_Obj_Parent_ID` | (Optional) Parent record ID for cross-record hierarchies |
+| `INC_Root_Folder_Name` | Name for the root folder |
+
+Example: Trigger the flow from a record-triggered flow when an Opportunity is created to automatically create a standard folder structure.
 
 ## License
 

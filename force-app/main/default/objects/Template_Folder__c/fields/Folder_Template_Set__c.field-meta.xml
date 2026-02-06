@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Folder_Template_Set__c</fullName>
+    <label>Folder Template Set</label>
+    <referenceTo>Folder_Template_Set__c</referenceTo>
+    <relationshipLabel>Template Folders</relationshipLabel>
+    <relationshipName>Template_Folders</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>
