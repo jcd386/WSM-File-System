@@ -44,17 +44,6 @@
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
 
-    <!-- Folder_Template__c Object Permissions -->
-    <objectPermissions>
-        <allowCreate>true</allowCreate>
-        <allowDelete>true</allowDelete>
-        <allowEdit>true</allowEdit>
-        <allowRead>true</allowRead>
-        <modifyAllRecords>true</modifyAllRecords>
-        <object>Folder_Template__c</object>
-        <viewAllRecords>true</viewAllRecords>
-    </objectPermissions>
-
     <!-- Folder_Template_Set__c Object Permissions -->
     <objectPermissions>
         <allowCreate>true</allowCreate>
@@ -130,10 +119,6 @@
     </tabSettings>
     <tabSettings>
         <tab>Folder_Template_Set__c</tab>
-        <visibility>Visible</visibility>
-    </tabSettings>
-    <tabSettings>
-        <tab>Folder_Template__c</tab>
         <visibility>Visible</visibility>
     </tabSettings>
 </PermissionSet>

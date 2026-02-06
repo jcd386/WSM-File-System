@@ -29,7 +29,6 @@ A hierarchical file and folder management system for Salesforce, built with Ligh
 |--------|-------------|
 | `Folder_Template_Set__c` | Groups folder templates together (e.g., "Project Folders", "Case Folders") |
 | `Template_Folder__c` | Individual folder templates within a set |
-| `Folder_Template__c` | Links templates to other metadata |
 
 ### Apex Classes
 
