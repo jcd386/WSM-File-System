@@ -20,6 +20,37 @@ import getFolderContentsCount from "@salesforce/apex/WSMFolderTreeService.getFol
 // Maximum file size for drag-drop upload (4.5MB to stay within Apex heap limits)
 const MAX_FILE_SIZE_BYTES = 4718592;
 
+// File extension → SLDS doctype icon mapping
+const FILE_ICON_MAP = {
+  pdf: 'doctype:pdf',
+  csv: 'doctype:csv',
+  xls: 'doctype:excel',
+  xlsx: 'doctype:excel',
+  doc: 'doctype:word',
+  docx: 'doctype:word',
+  ppt: 'doctype:ppt',
+  pptx: 'doctype:ppt',
+  jpg: 'doctype:image',
+  jpeg: 'doctype:image',
+  png: 'doctype:image',
+  gif: 'doctype:image',
+  bmp: 'doctype:image',
+  webp: 'doctype:image',
+  txt: 'doctype:txt',
+  rtf: 'doctype:rtf',
+  zip: 'doctype:zip'
+};
+const DEFAULT_FILE_ICON = 'doctype:unknown';
+const FOLDER_ICON = 'utility:open_folder';
+
+// Allowed file extensions for drag-drop validation
+const ALLOWED_EXTENSIONS = new Set([
+  'pdf', 'csv',
+  'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp',
+  'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+  'txt', 'rtf', 'zip'
+]);
+
 export default class WsmFolderTreeV2 extends NavigationMixin(LightningElement) {
   @api recordId;
 
@@ -253,6 +284,10 @@ export default class WsmFolderTreeV2 extends NavigationMixin(LightningElement) {
           fileUrl: item.fileUrl || null,
           contentDocumentId: item.contentDocumentId || null,
           filePreviewUrl: null, // Will be populated below
+          iconName: item.nodeType === 'Folder' ? FOLDER_ICON : this.getFileIcon(item.label),
+          iconAlternativeText: item.nodeType === 'Folder'
+            ? 'Folder'
+            : (this.getFileExtension(item.label)?.toUpperCase() || 'File') + ' file',
           folderAriaLabel: item.nodeType === 'Folder' ? `Open folder ${item.label}` : null,
           formattedCreatedDate: this.formatDate(item.createdDate),
           createdBy: item.createdBy || '',
@@ -418,6 +453,56 @@ export default class WsmFolderTreeV2 extends NavigationMixin(LightningElement) {
     }
   }
 
+  /**
+   * Returns the SLDS doctype icon name based on a file name's extension
+   */
+  getFileIcon(fileName) {
+    if (!fileName) return DEFAULT_FILE_ICON;
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    return FILE_ICON_MAP[ext] || DEFAULT_FILE_ICON;
+  }
+
+  /**
+   * Formats bytes into a human-readable string (e.g., "5.2 MB")
+   */
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const units = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    const size = (bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1);
+    return `${size} ${units[i]}`;
+  }
+
+  /**
+   * Extracts the lowercase file extension from a file name (no dot)
+   */
+  getFileExtension(fileName) {
+    if (!fileName || !fileName.includes('.')) return '';
+    return fileName.split('.').pop().toLowerCase();
+  }
+
+  /**
+   * Validates a list of files for size and type, returns categorized results
+   */
+  validateFiles(files) {
+    const validFiles = [];
+    const tooLargeFiles = [];
+    const invalidTypeFiles = [];
+
+    for (const file of files) {
+      const ext = this.getFileExtension(file.name);
+      if (!ext || !ALLOWED_EXTENSIONS.has(ext)) {
+        invalidTypeFiles.push(file);
+      } else if (file.size > MAX_FILE_SIZE_BYTES) {
+        tooLargeFiles.push(file);
+      } else {
+        validFiles.push(file);
+      }
+    }
+
+    return { validFiles, tooLargeFiles, invalidTypeFiles };
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // DRAG AND DROP METHODS (V2 FEATURE)
   // ─────────────────────────────────────────────────────────────────────────
@@ -493,39 +578,46 @@ export default class WsmFolderTreeV2 extends NavigationMixin(LightningElement) {
   }
 
   /**
-   * Processes dropped files - separates by size and handles accordingly
+   * Processes dropped files - validates type and size, handles accordingly
    * @param {FileList} files - The dropped files
    */
   async processDroppedFiles(files) {
-    const smallFiles = [];
-    const largeFiles = [];
+    const { validFiles, tooLargeFiles, invalidTypeFiles } = this.validateFiles(files);
 
-    // Separate files by size
-    for (const file of files) {
-      if (file.size > MAX_FILE_SIZE_BYTES) {
-        largeFiles.push(file);
-      } else {
-        smallFiles.push(file);
-      }
+    // Build consolidated error messages
+    const errorParts = [];
+
+    if (invalidTypeFiles.length > 0) {
+      const names = invalidTypeFiles.map(f => {
+        const ext = this.getFileExtension(f.name);
+        return `${f.name} (.${ext || 'no extension'})`;
+      }).join(', ');
+      errorParts.push(
+        `Unsupported file type: ${names}. Allowed: ${[...ALLOWED_EXTENSIONS].join(', ')}.`
+      );
     }
 
-    // Handle large files by opening the upload modal
-    if (largeFiles.length > 0) {
-      const largeFileNames = largeFiles.map(f => f.name).join(', ');
-      this.showToast(
-        'Large Files Detected',
-        `The following files are too large for drag-drop upload (>4.5MB): ${largeFileNames}. Please use the Upload button.`,
-        'warning'
+    if (tooLargeFiles.length > 0) {
+      const maxSize = this.formatFileSize(MAX_FILE_SIZE_BYTES);
+      const names = tooLargeFiles.map(f =>
+        `${f.name} (${this.formatFileSize(f.size)})`
+      ).join(', ');
+      errorParts.push(
+        `Exceeds ${maxSize} drag-drop limit: ${names}. Use the Upload button for larger files.`
       );
 
-      // Open upload modal with current folder pre-selected
+      // Open upload modal with current folder pre-selected for large files
       this.selectedUploadFolderId = this.currentFolderId;
       await this.handleOpenUploadModal();
     }
 
-    // Upload small files via base64
-    if (smallFiles.length > 0) {
-      await this.uploadDroppedFiles(smallFiles);
+    if (errorParts.length > 0) {
+      this.showToast('Upload Validation', errorParts.join(' '), 'warning');
+    }
+
+    // Upload valid files via base64
+    if (validFiles.length > 0) {
+      await this.uploadDroppedFiles(validFiles);
     }
   }
 
@@ -1052,7 +1144,7 @@ export default class WsmFolderTreeV2 extends NavigationMixin(LightningElement) {
     }
 
     // Get folder name from the link text
-    const folderName = event.currentTarget.textContent.trim().replace('📁 ', '');
+    const folderName = event.currentTarget.textContent.trim();
 
     await this.navigateToModalFolder(folderId, folderName, parentRecordId);
   }

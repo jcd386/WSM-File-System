@@ -18,6 +18,16 @@ td.action-cell {
   padding-right: 0.5rem !important;
 }
 
+/* File/Folder icon alignment in table cells */
+td[data-label="Name"] lightning-icon {
+  vertical-align: middle;
+}
+
+td[data-label="Name"] a {
+  display: inline-flex;
+  align-items: center;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    DRAG AND DROP STYLES (V2 FEATURE)
    ───────────────────────────────────────────────────────────────────────── */

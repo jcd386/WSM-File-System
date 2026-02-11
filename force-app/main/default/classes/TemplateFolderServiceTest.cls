@@ -171,8 +171,8 @@ private class TemplateFolderServiceTest {
     static void testGetChildCountValidation() {
         Test.startTest();
         // Validation paths - don't need FLS
-        Integer r1 = TemplateFolderService.getChildCount('');
-        Integer r2 = TemplateFolderService.getChildCount(null);
+        TemplateFolderService.DeleteResult r1 = TemplateFolderService.getChildCount('');
+        TemplateFolderService.DeleteResult r2 = TemplateFolderService.getChildCount(null);
         Test.stopTest();
     }
 

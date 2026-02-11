@@ -152,7 +152,7 @@
                           role="button"
                           aria-label={item.folderAriaLabel}
                         >
-                          <span aria-hidden="true">📁 </span>{item.label}
+                          <lightning-icon icon-name={item.iconName} alternative-text={item.iconAlternativeText} size="x-small" class="slds-m-right_xx-small"></lightning-icon>{item.label}
                         </a>
                       </template>
                       <template lwc:else>
@@ -166,7 +166,7 @@
                           role="button"
                           aria-label={item.label}
                         >
-                          <span aria-hidden="true">📄 </span>{item.label}
+                          <lightning-icon icon-name={item.iconName} alternative-text={item.iconAlternativeText} size="x-small" class="slds-m-right_xx-small"></lightning-icon>{item.label}
                         </a>
                       </template>
                     </td>
@@ -341,7 +341,8 @@
               ></lightning-file-upload>
             </div>
             <div class="slds-form-element__help slds-text-color_weak slds-m-top_x-small">
-              Supported formats: PDF, CSV, Images (JPG, PNG, GIF), Microsoft Office files (DOC, DOCX, XLS, XLSX, PPT, PPTX)
+              Supported formats: PDF, CSV, Images (JPG, PNG, GIF, BMP, WEBP), Microsoft Office (DOC, DOCX, XLS, XLSX, PPT, PPTX), TXT, RTF, ZIP.
+              Drag-drop limit: 4.5 MB per file.
             </div>
           </div>
 
@@ -647,7 +648,7 @@
                         <tr key={result.folderId}>
                           <td data-label="Folder">
                             <div class="slds-truncate" title={result.folderName}>
-                              📁 {result.folderName}
+                              <lightning-icon icon-name="utility:open_folder" alternative-text="Folder" size="x-small" class="slds-m-right_xx-small"></lightning-icon>{result.folderName}
                             </div>
                           </td>
                           <td data-label="Path">
@@ -705,7 +706,7 @@
                               class="slds-truncate"
                               title={folder.label}
                             >
-                              📁 {folder.label}
+                              <lightning-icon icon-name="utility:open_folder" alternative-text="Folder" size="x-small" class="slds-m-right_xx-small"></lightning-icon>{folder.label}
                             </a>
                           </td>
                           <td style="width: 80px;">
@@ -744,7 +745,7 @@
                                 class="slds-truncate"
                                 title={folder.label}
                               >
-                                📁 {folder.label}
+                                <lightning-icon icon-name="utility:open_folder" alternative-text="Folder" size="x-small" class="slds-m-right_xx-small"></lightning-icon>{folder.label}
                               </a>
                             </td>
                             <td style="width: 80px;">
@@ -1190,7 +1191,7 @@
                             class="slds-truncate"
                             title={folder.label}
                           >
-                            📁 {folder.label}
+                            <lightning-icon icon-name="utility:open_folder" alternative-text="Folder" size="x-small" class="slds-m-right_xx-small"></lightning-icon>{folder.label}
                           </a>
                         </td>
                         <td style="width: 80px;">
@@ -1229,7 +1230,7 @@
                               class="slds-truncate"
                               title={folder.label}
                             >
-                              📁 {folder.label}
+                              <lightning-icon icon-name="utility:open_folder" alternative-text="Folder" size="x-small" class="slds-m-right_xx-small"></lightning-icon>{folder.label}
                             </a>
                           </td>
                           <td style="width: 80px;">
