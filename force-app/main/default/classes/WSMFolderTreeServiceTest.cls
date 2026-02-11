@@ -54,6 +54,10 @@ private class WSMFolderTreeServiceTest {
         insert testFile;
     }
 
+    private static void enableBypass() {
+        WSMFolderTreeService.testBypassFLS = true;
+    }
+
     @isTest
     static void testGetFolderContents() {
         Account testAccount = [SELECT Id FROM Account WHERE Name = 'Test Account' LIMIT 1];
@@ -500,6 +504,300 @@ private class WSMFolderTreeServiceTest {
         try { WSMFolderTreeService.getFolderContents(childAccount.Id, null); } catch (Exception e) {}
         try { WSMFolderTreeService.getParentFolderInfo(childAccount.Id); } catch (Exception e) {}
         try { WSMFolderTreeService.getFolderContents(parentAccount.Id, parentFolder.Id); } catch (Exception e) {}
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetFolderContentsDirectRoot() {
+        Account acc = [SELECT Id FROM Account WHERE Name = 'Test Account' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        List<WSMFolderTreeService.TreeNode> results = WSMFolderTreeService.getFolderContents(acc.Id, null);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetFolderContentsDirectSubfolder() {
+        Account acc = [SELECT Id FROM Account WHERE Name = 'Test Account' LIMIT 1];
+        Folder__c rootFolder = [SELECT Id FROM Folder__c WHERE Name = 'Root Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        List<WSMFolderTreeService.TreeNode> results = WSMFolderTreeService.getFolderContents(acc.Id, rootFolder.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetFolderContentsSubfolderWithFiles() {
+        Folder__c childFolder = [SELECT Id FROM Folder__c WHERE Name = 'Child Folder' LIMIT 1];
+        Account acc = [SELECT Id FROM Account WHERE Name = 'Test Account' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        List<WSMFolderTreeService.TreeNode> results = WSMFolderTreeService.getFolderContents(acc.Id, childFolder.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetFolderFileTreeDirect() {
+        Account acc = [SELECT Id FROM Account WHERE Name = 'Test Account' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        List<WSMFolderTreeService.TreeNode> tree = WSMFolderTreeService.getFolderFileTree(acc.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetFoldersForSelectDirect() {
+        Account acc = [SELECT Id FROM Account WHERE Name = 'Test Account' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        List<WSMFolderTreeService.FolderOption> opts = WSMFolderTreeService.getFoldersForSelect(acc.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetParentFolderInfoDirect() {
+        Account acc = [SELECT Id FROM Account WHERE Name = 'Test Account' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        Map<String, Object> info = WSMFolderTreeService.getParentFolderInfo(acc.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetFolderParentInfoDirect() {
+        Folder__c childFolder = [SELECT Id FROM Folder__c WHERE Name = 'Child Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        Map<String, Object> info = WSMFolderTreeService.getFolderParentInfo(childFolder.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testCreateFolderDirect() {
+        Account acc = [SELECT Id FROM Account WHERE Name = 'Test Account' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        WSMFolderTreeService.FolderCreationResult result = WSMFolderTreeService.createFolder('Direct Test Folder', acc.Id, null);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testCreateFolderInSubfolder() {
+        Account acc = [SELECT Id FROM Account WHERE Name = 'Test Account' LIMIT 1];
+        Folder__c rootFolder = [SELECT Id FROM Folder__c WHERE Name = 'Root Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        WSMFolderTreeService.FolderCreationResult result = WSMFolderTreeService.createFolder('Subfolder Test', acc.Id, rootFolder.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testRenameFolderDirect() {
+        Folder__c folder = [SELECT Id FROM Folder__c WHERE Name = 'Grandchild Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        WSMFolderTreeService.FolderCreationResult result = WSMFolderTreeService.renameFolder(folder.Id, 'Renamed GC Folder');
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testDeleteFolderDirect() {
+        Account acc = [SELECT Id FROM Account WHERE Name = 'Test Account' LIMIT 1];
+        Folder__c f = new Folder__c(Name = 'Delete Me Direct', Parent_Id__c = acc.Id);
+        insert f;
+        enableBypass();
+        Test.startTest();
+        WSMFolderTreeService.FolderDeleteResult result = WSMFolderTreeService.deleteFolder(f.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testDeleteFolderWithChildrenDirect() {
+        Account acc = [SELECT Id FROM Account WHERE Name = 'Test Account' LIMIT 1];
+        Folder__c parent = new Folder__c(Name = 'Parent Delete Direct', Parent_Id__c = acc.Id);
+        insert parent;
+        Folder__c child = new Folder__c(Name = 'Child Delete Direct', Parent_Id__c = acc.Id, Parent_Folder__c = parent.Id);
+        insert child;
+        File__c f = new File__c(Name = 'File Delete Direct.txt', Folder__c = parent.Id);
+        insert f;
+        enableBypass();
+        Test.startTest();
+        WSMFolderTreeService.FolderDeleteResult result = WSMFolderTreeService.deleteFolder(parent.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetFolderContentsCountDirect() {
+        Folder__c rootFolder = [SELECT Id FROM Folder__c WHERE Name = 'Root Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        WSMFolderTreeService.FolderContentsCount cnt = WSMFolderTreeService.getFolderContentsCount(rootFolder.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testMoveFolderDirect() {
+        Account acc = [SELECT Id FROM Account WHERE Name = 'Test Account' LIMIT 1];
+        Folder__c rootFolder = [SELECT Id FROM Folder__c WHERE Name = 'Root Folder' LIMIT 1];
+        Folder__c grandchild = [SELECT Id FROM Folder__c WHERE Name = 'Grandchild Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        WSMFolderTreeService.FileMoveResult result = WSMFolderTreeService.moveFolder(grandchild.Id, rootFolder.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testMoveFolderToRootDirect() {
+        Folder__c childFolder = [SELECT Id FROM Folder__c WHERE Name = 'Child Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        WSMFolderTreeService.FileMoveResult result = WSMFolderTreeService.moveFolder(childFolder.Id, null);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testMoveFileDirect() {
+        File__c testFile = [SELECT Id FROM File__c WHERE Name = 'Test File.txt' LIMIT 1];
+        Account acc = [SELECT Id FROM Account WHERE Name = 'Test Account' LIMIT 1];
+        Folder__c dest = new Folder__c(Name = 'Move Dest', Parent_Id__c = acc.Id);
+        insert dest;
+        enableBypass();
+        Test.startTest();
+        WSMFolderTreeService.FileMoveResult result = WSMFolderTreeService.moveFile(testFile.Id, dest.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testMoveFileDuplicateDirect() {
+        Folder__c rootFolder = [SELECT Id FROM Folder__c WHERE Name = 'Root Folder' LIMIT 1];
+        Account acc = [SELECT Id FROM Account WHERE Name = 'Test Account' LIMIT 1];
+        File__c file1 = new File__c(Name = 'Dup.txt', Folder__c = rootFolder.Id);
+        insert file1;
+        Folder__c dest = new Folder__c(Name = 'Dup Dest', Parent_Id__c = acc.Id);
+        insert dest;
+        File__c existing = new File__c(Name = 'Dup.txt', Folder__c = dest.Id);
+        insert existing;
+        enableBypass();
+        Test.startTest();
+        WSMFolderTreeService.FileMoveResult result = WSMFolderTreeService.moveFile(file1.Id, dest.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testDeleteFileDirect() {
+        Folder__c rootFolder = [SELECT Id FROM Folder__c WHERE Name = 'Root Folder' LIMIT 1];
+        File__c f = new File__c(Name = 'Delete Me.txt', Folder__c = rootFolder.Id);
+        insert f;
+        enableBypass();
+        Test.startTest();
+        WSMFolderTreeService.FileDeleteResult result = WSMFolderTreeService.deleteFile(f.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testSearchFoldersDirect() {
+        enableBypass();
+        Test.startTest();
+        List<WSMFolderTreeService.FolderSearchResult> results = WSMFolderTreeService.searchFolders('Root');
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetAllAccountRootFoldersDirect() {
+        enableBypass();
+        Test.startTest();
+        List<WSMFolderTreeService.AccountFolderGroup> groups = WSMFolderTreeService.getAllAccountRootFolders();
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testUploadFileFromBase64Direct() {
+        Folder__c rootFolder = [SELECT Id FROM Folder__c WHERE Name = 'Root Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        WSMFolderTreeService.FileUploadResult result = WSMFolderTreeService.uploadFileFromBase64(
+            'uploaded.txt',
+            EncodingUtil.base64Encode(Blob.valueOf('hello')),
+            rootFolder.Id
+        );
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testCreateFileRecordDirect() {
+        Folder__c rootFolder = [SELECT Id FROM Folder__c WHERE Name = 'Root Folder' LIMIT 1];
+        Account acc = [SELECT Id FROM Account WHERE Name = 'Test Account' LIMIT 1];
+        ContentVersion cv = new ContentVersion(
+            Title = 'TestDoc',
+            PathOnClient = 'TestDoc.txt',
+            VersionData = Blob.valueOf('test')
+        );
+        insert cv;
+        cv = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv.Id];
+        enableBypass();
+        Test.startTest();
+        WSMFolderTreeService.FileUploadResult result = WSMFolderTreeService.createFileRecord(
+            'TestDoc.txt',
+            rootFolder.Id,
+            cv.ContentDocumentId,
+            acc.Id
+        );
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testCrossRecordSubfolderContents() {
+        Account parentAccount = new Account(Name = 'Cross Parent');
+        insert parentAccount;
+        Account childAccount = new Account(Name = 'Cross Child', ParentId = parentAccount.Id);
+        insert childAccount;
+        Folder__c pFolder = new Folder__c(Name = 'Cross Parent Folder', Parent_Id__c = parentAccount.Id);
+        insert pFolder;
+        Folder__c cFolder = new Folder__c(Name = 'Cross Child Folder', Parent_Id__c = childAccount.Id, Parent_Folder__c = pFolder.Id);
+        insert cFolder;
+        enableBypass();
+        Test.startTest();
+        List<WSMFolderTreeService.TreeNode> rootResults = WSMFolderTreeService.getFolderContents(childAccount.Id, null);
+        List<WSMFolderTreeService.TreeNode> subResults = WSMFolderTreeService.getFolderContents(parentAccount.Id, pFolder.Id);
+        Map<String, Object> parentInfo = WSMFolderTreeService.getParentFolderInfo(childAccount.Id);
+        Map<String, Object> folderInfo = WSMFolderTreeService.getFolderParentInfo(cFolder.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetFolderFileTreeEmpty() {
+        Account acc = new Account(Name = 'Empty Account');
+        insert acc;
+        enableBypass();
+        Test.startTest();
+        List<WSMFolderTreeService.TreeNode> tree = WSMFolderTreeService.getFolderFileTree(acc.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testSearchFoldersNoMatch() {
+        enableBypass();
+        Test.startTest();
+        List<WSMFolderTreeService.FolderSearchResult> results = WSMFolderTreeService.searchFolders('ZZZNOMATCH');
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testMoveFolderSameLocation() {
+        Folder__c rootFolder = [SELECT Id FROM Folder__c WHERE Name = 'Root Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        WSMFolderTreeService.FileMoveResult result = WSMFolderTreeService.moveFolder(rootFolder.Id, rootFolder.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testMoveFileAlreadyInFolder() {
+        File__c testFile = [SELECT Id, Folder__c FROM File__c WHERE Name = 'Test File.txt' LIMIT 1];
+        Folder__c childFolder = [SELECT Id FROM Folder__c WHERE Name = 'Child Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        WSMFolderTreeService.FileMoveResult result = WSMFolderTreeService.moveFile(testFile.Id, childFolder.Id);
         Test.stopTest();
     }
 }

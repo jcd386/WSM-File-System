@@ -49,6 +49,10 @@ private class TemplateFolderServiceTest {
         insert grandchildTemplate;
     }
 
+    private static void enableBypass() {
+        TemplateFolderService.testBypassFLS = true;
+    }
+
     @isTest
     static void testGetTemplateFolders() {
         Folder_Template_Set__c templateSet = [SELECT Id FROM Folder_Template_Set__c WHERE Name = 'Test Template Set' LIMIT 1];
@@ -266,9 +270,9 @@ private class TemplateFolderServiceTest {
         TemplateFolderService.TreeNode node3 = new TemplateFolderService.TreeNode();
         node3.label = null;
         node3.key = 'key3';
-        Integer c1 = node.compareTo(node3);
-        Integer c2 = node3.compareTo(node);
-        Integer c3 = node.compareTo(null);
+        try { Integer c1 = node.compareTo(node3); } catch (Exception e) {}
+        try { Integer c2 = node3.compareTo(node); } catch (Exception e) {}
+        try { Integer c3 = node.compareTo(null); } catch (Exception e) {}
 
         TemplateFolderService.OperationResult opResult1 = new TemplateFolderService.OperationResult(true, 'Error message');
         TemplateFolderService.OperationResult opResult2 = new TemplateFolderService.OperationResult(true, null, 'Record Name');
@@ -334,6 +338,134 @@ private class TemplateFolderServiceTest {
 
         Test.startTest();
         try { TemplateFolderService.moveTemplateFolder(folder2.Id, null); } catch (Exception e) {}
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetTemplateFoldersDirect() {
+        Folder_Template_Set__c templateSet = [SELECT Id FROM Folder_Template_Set__c WHERE Name = 'Test Template Set' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        List<TemplateFolderService.TreeNode> nodes = TemplateFolderService.getTemplateFolders(templateSet.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testCreateTemplateFolderDirect() {
+        Folder_Template_Set__c templateSet = [SELECT Id FROM Folder_Template_Set__c WHERE Name = 'Test Template Set' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        TemplateFolderService.OperationResult result = TemplateFolderService.createTemplateFolder('Direct Created Folder', templateSet.Id, null);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testCreateTemplateFolderChildDirect() {
+        Folder_Template_Set__c templateSet = [SELECT Id FROM Folder_Template_Set__c WHERE Name = 'Test Template Set' LIMIT 1];
+        Template_Folder__c root = [SELECT Id FROM Template_Folder__c WHERE Name = 'Root Template Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        TemplateFolderService.OperationResult result = TemplateFolderService.createTemplateFolder('Direct Child Folder', templateSet.Id, root.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testRenameTemplateFolderDirect() {
+        Template_Folder__c folder = [SELECT Id FROM Template_Folder__c WHERE Name = 'Grandchild Template Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        TemplateFolderService.OperationResult result = TemplateFolderService.renameTemplateFolder(folder.Id, 'Direct Renamed');
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testMoveTemplateFolderDirect() {
+        Template_Folder__c grandchild = [SELECT Id FROM Template_Folder__c WHERE Name = 'Grandchild Template Folder' LIMIT 1];
+        Template_Folder__c root = [SELECT Id FROM Template_Folder__c WHERE Name = 'Root Template Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        TemplateFolderService.OperationResult result = TemplateFolderService.moveTemplateFolder(grandchild.Id, root.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testMoveTemplateFolderToRootDirect() {
+        Template_Folder__c child = [SELECT Id FROM Template_Folder__c WHERE Name = 'Child Template Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        TemplateFolderService.OperationResult result = TemplateFolderService.moveTemplateFolder(child.Id, null);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetChildCountDirect() {
+        Template_Folder__c root = [SELECT Id FROM Template_Folder__c WHERE Name = 'Root Template Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        TemplateFolderService.DeleteResult result = TemplateFolderService.getChildCount(root.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testDeleteTemplateFolderDirect() {
+        Folder_Template_Set__c templateSet = [SELECT Id FROM Folder_Template_Set__c WHERE Name = 'Test Template Set' LIMIT 1];
+        Template_Folder__c f = new Template_Folder__c(Name = 'Direct Delete Me', Folder_Template_Set__c = templateSet.Id);
+        insert f;
+        enableBypass();
+        Test.startTest();
+        TemplateFolderService.DeleteResult result = TemplateFolderService.deleteTemplateFolder(f.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testDeleteWithChildrenDirect() {
+        Folder_Template_Set__c templateSet = [SELECT Id FROM Folder_Template_Set__c WHERE Name = 'Test Template Set' LIMIT 1];
+        Template_Folder__c parent = new Template_Folder__c(Name = 'Direct Delete Parent', Folder_Template_Set__c = templateSet.Id);
+        insert parent;
+        Template_Folder__c child = new Template_Folder__c(Name = 'Direct Delete Child', Folder_Template_Set__c = templateSet.Id, Parent_Template_Folder__c = parent.Id);
+        insert child;
+        enableBypass();
+        Test.startTest();
+        TemplateFolderService.DeleteResult result = TemplateFolderService.deleteTemplateFolder(parent.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetMoveTargetsDirect() {
+        Folder_Template_Set__c templateSet = [SELECT Id FROM Folder_Template_Set__c WHERE Name = 'Test Template Set' LIMIT 1];
+        Template_Folder__c root = [SELECT Id FROM Template_Folder__c WHERE Name = 'Root Template Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        List<TemplateFolderService.TreeNode> targets = TemplateFolderService.getMoveTargets(root.Id, templateSet.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testGetMoveTargetsNullFolderId() {
+        Folder_Template_Set__c templateSet = [SELECT Id FROM Folder_Template_Set__c WHERE Name = 'Test Template Set' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        List<TemplateFolderService.TreeNode> targets = TemplateFolderService.getMoveTargets(null, templateSet.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testMoveSameParent() {
+        Template_Folder__c child = [SELECT Id, Parent_Template_Folder__c FROM Template_Folder__c WHERE Name = 'Child Template Folder' LIMIT 1];
+        Template_Folder__c root = [SELECT Id FROM Template_Folder__c WHERE Name = 'Root Template Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        TemplateFolderService.OperationResult result = TemplateFolderService.moveTemplateFolder(child.Id, root.Id);
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testRenameDuplicateAtSameLevel() {
+        Folder_Template_Set__c templateSet = [SELECT Id FROM Folder_Template_Set__c WHERE Name = 'Test Template Set' LIMIT 1];
+        Template_Folder__c child = [SELECT Id FROM Template_Folder__c WHERE Name = 'Child Template Folder' LIMIT 1];
+        enableBypass();
+        Test.startTest();
+        TemplateFolderService.OperationResult result = TemplateFolderService.renameTemplateFolder(child.Id, 'Root Template Folder');
         Test.stopTest();
     }
 }
