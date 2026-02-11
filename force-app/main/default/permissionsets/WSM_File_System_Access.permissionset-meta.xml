@@ -5,6 +5,12 @@
     <hasActivationRequired>false</hasActivationRequired>
     <license>Salesforce</license>
 
+    <!-- Custom Permission -->
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>WSM_File_System_Access</name>
+    </customPermissions>
+
     <!-- Apex Class Access -->
     <classAccesses>
         <apexClass>WSMFolderTreeService</apexClass>
